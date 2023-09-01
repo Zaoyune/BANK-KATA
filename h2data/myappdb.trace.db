@@ -1,0 +1,6 @@
+2023-09-01 00:21:13 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "ACCOUNT" not found; SQL statement:
+insert into account (id, first_name, last_name, balance) values (null, ?, ?, ?) [42102-200]
+2023-09-01 00:22:44 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "ACCOUNT" not found; SQL statement:
+insert into account (id, first_name, last_name, balance) values (null, ?, ?, ?) [42102-200]

@@ -1,0 +1,22 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  db:
+    image: "oscarfonts/h2"
+    ports:
+      - "8081:8081"
+    environment:
+      - TZ=UTC
+    volumes:
+      - h2-data:/h2-data  # Use a named volume for data persistence
+
+volumes:
+  h2-data:  # Named volume for H2 data
