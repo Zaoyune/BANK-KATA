@@ -16,16 +16,18 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.ResponseEntity;
 
+import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Fail.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 public class AccountServiceImplTest {
@@ -50,14 +52,15 @@ public class AccountServiceImplTest {
     void testDepositMoney() {
         Long accountId = 1L;
         int amount = 100;
-        Account account = new Account(accountId,"Hassan","Benharouga",  500, new ArrayList<>());
+        int initialBalance = 500;
+        Account account = new Account(accountId,"Hassan","Benharouga",  initialBalance, new ArrayList<>());
         TransactionType transactionType = TransactionType.DEBIT;
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
 
         ResponseEntity<String> response = accountService.depositMoney(accountId, amount);
 
-        assertEquals(ResponseEntity.ok("Money deposited successfully, new balance : 600"), response);
+        assertEquals(ResponseEntity.ok("Money deposited successfully, new balance : "+(initialBalance+amount)), response);
         verify(transactionRepository, times(1)).save(any(Transaction.class));
         verify(accountRepository, times(1)).save(account);
     }
@@ -66,16 +69,33 @@ public class AccountServiceImplTest {
     void testWithdrawMoney() {
         Long accountId = 1L;
         int amount = 50;
-        Account account = new Account(accountId,"Hassan","Benharouga",  200, new ArrayList<>());
+        int initialBalance = 250;
+        Account account = new Account(accountId,"Hassan","Benharouga",  initialBalance, new ArrayList<>());
         TransactionType transactionType = TransactionType.CREDIT;
 
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
 
         ResponseEntity<String> response = accountService.withdrawMoney(accountId, amount);
         System.out.println("Account balance after withdrawal: " + account.getBalance());
-        assertEquals(ResponseEntity.ok("Money withdrawn successfully, new balance : 150"), response);
+        assertEquals(ResponseEntity.ok("Money withdrawn successfully, new balance : "+(initialBalance-amount)), response);
         verify(transactionRepository, times(1)).save(any(Transaction.class));
         verify(accountRepository, times(1)).save(account);
+
+    }
+
+    @Test
+    void testWithdrawMoneyWithInsufficientBalance() {
+        Long accountId = 1L;
+        int initialBalance = 100;
+        int amount = 150;
+
+        Account account = new Account(accountId,"Hassan","Benharouga",  initialBalance, new ArrayList<>());
+
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        assertThrows(RuntimeException.class, () -> accountService.withdrawMoney(accountId, amount));
+
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(accountRepository, never()).save(any(Account.class));
     }
 
     @Test
