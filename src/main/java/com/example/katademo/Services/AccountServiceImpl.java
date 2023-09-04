@@ -15,11 +15,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class AccountServiceImpl implements AccountService{
 
 
@@ -55,17 +57,23 @@ public class AccountServiceImpl implements AccountService{
     public ResponseEntity<String> withdrawMoney(Long accountId, int amount) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new EntityNotFoundException("Account not found"));
-        Transaction transaction = new Transaction(
-                null,
-                LocalDateTime.now(),
-                TransactionType.CREDIT,
-                amount,
-                account
-        );
-        transactionRepository.save(transaction);
-        account.setBalance(account.getBalance() - amount);
-        accountRepository.save(account);
-        return ResponseEntity.ok("Money withdrawn successfully, new balance : " + account.getBalance());
+        int currentBalance = getCurrentBalance(accountId);
+        if(amount>currentBalance){
+            throw new RuntimeException("Insufficient balance for the transaction");
+        }else {
+            Transaction transaction = new Transaction(
+                    null,
+                    LocalDateTime.now(),
+                    TransactionType.CREDIT,
+                    amount,
+                    account
+            );
+
+            transactionRepository.save(transaction);
+            account.setBalance(account.getBalance() - amount);
+            accountRepository.save(account);
+            return ResponseEntity.ok("Money withdrawn successfully, new balance : " + account.getBalance());
+        }
     }
 
     @Override
